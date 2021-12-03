@@ -10,13 +10,11 @@ on:
 jobs:
   changelog:
     runs-on: ubuntu-20.04
-    id: changelog
     steps:
-      - name: "✏️ Generate release changelog"
+      - name: "Generate release changelog"
         uses: heinrichreimer/github-changelog-generator-action@v2.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-
 
       - name: Publish binary
         uses: actions/upload-artifact@v2
