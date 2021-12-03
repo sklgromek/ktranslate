@@ -12,6 +12,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: "Generate release changelog"
+        id: gen
         uses: heinrichreimer/github-changelog-generator-action@v2.3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -20,4 +21,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: CHANGELOG.md
-          path: ${{ steps.run_tests.outputs.changelog }}
+          path: ${{ steps.id.outputs.changelog }}
