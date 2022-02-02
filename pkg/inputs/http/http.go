@@ -13,6 +13,7 @@ import (
 	"github.com/kentik/ktranslate/pkg/api"
 	"github.com/kentik/ktranslate/pkg/eggs/kmux"
 	"github.com/kentik/ktranslate/pkg/eggs/logger"
+	"github.com/kentik/ktranslate/pkg/inputs/http/dialout/vmware_sdwan"
 	"github.com/kentik/ktranslate/pkg/kt"
 )
 
@@ -22,6 +23,7 @@ type KentikHttpListener struct {
 	apic     *api.KentikApi
 	devices  map[string]*kt.Device
 	jchfChan chan []*kt.JCHF
+	dialouts map[string]DialoutClient
 }
 
 type HttpListenerMetric struct {
@@ -29,10 +31,18 @@ type HttpListenerMetric struct {
 	Errors   go_metrics.Meter
 }
 
+type DialoutClient interface {
+	Run(context.Context)
+	Close()
+}
+
 const (
 	CHAN_SLACK           = 10000
 	DeviceUpdateDuration = 1 * time.Hour
 	Listen               = "/input"
+
+	// Specific devices which http can dialout to and poll for data:
+	HTTP_TYPE_VMWARE_SDWAN = "vmware_sdwan"
 )
 
 func NewHttpListener(ctx context.Context, host string, log logger.Underlying, registry go_metrics.Registry, jchfChan chan []*kt.JCHF, apic *api.KentikApi) (*KentikHttpListener, error) {
@@ -43,8 +53,24 @@ func NewHttpListener(ctx context.Context, host string, log logger.Underlying, re
 			Messages: go_metrics.GetOrRegisterMeter(fmt.Sprintf("http_messages^force=true"), registry),
 			Errors:   go_metrics.GetOrRegisterMeter(fmt.Sprintf("http_errors^force=true"), registry),
 		},
-		apic:    apic,
-		devices: apic.GetDevicesAsMap(0),
+		dialouts: map[string]DialoutClient{},
+		apic:     apic,
+		devices:  apic.GetDevicesAsMap(0),
+	}
+
+	// Launch any devices which have dial out settings
+	for name, device := range ks.devices {
+		switch device.HttpType {
+		case HTTP_TYPE_VMWARE_SDWAN:
+			sdw, err := vmware_sdwan.LaunchHttpPoll(ctx, log, registry, jchfChan, device)
+			if err != nil {
+				return nil, fmt.Errorf("Cannot init %s: %v", name, err)
+			}
+			ks.dialouts[name] = sdw
+		case "": // Noop
+		default:
+			return nil, fmt.Errorf("Unknown device type: %s", device.HttpType)
+		}
 	}
 
 	go ks.run(ctx)
@@ -200,16 +226,25 @@ func (ks *KentikHttpListener) run(ctx context.Context) {
 	deviceTicker := time.NewTicker(DeviceUpdateDuration)
 	defer deviceTicker.Stop()
 
-	ks.Infof("kentik http running, registered at %s", Listen)
+	// Start these running.
+	for _, c := range ks.dialouts {
+		c.Run(ctx)
+	}
+
+	ks.Infof("running, registered at %s", Listen)
 	for {
 		select {
 		case <-deviceTicker.C:
 			go func() {
-				ks.Infof("Updating the network flow device list.")
+				ks.Infof("Updating the http device list.")
 				ks.devices = ks.apic.GetDevicesAsMap(0)
 			}()
 		case <-ctx.Done():
-			ks.Infof("kentik http done")
+			for _, c := range ks.dialouts {
+				c.Close()
+			}
+			ks.Infof("done")
+
 			return
 		}
 	}

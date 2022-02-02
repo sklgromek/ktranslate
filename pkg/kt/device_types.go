@@ -29,6 +29,9 @@ type Device struct {
 	MaxFlowRate   int                   `json:"max_flow_rate"`
 	Customs       []Column              `json:"custom_column_data,omitempty"`
 	CustomStr     string                `json:"custom_columns"`
+	HttpType      string                `json:"-"`
+	HttpConfig    string                `json:"-"`
+	PollTimeSec   int                   `json:"-"`
 	allUserTags   map[string]string
 }
 

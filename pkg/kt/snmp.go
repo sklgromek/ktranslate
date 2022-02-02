@@ -160,6 +160,8 @@ type SnmpDeviceConfig struct {
 	NoUseBulkWalkAll    bool              `yaml:"no_use_bulkwalkall"`
 	InstrumentationName string            `yaml:"instrumentationName,omitempty"`
 	RunPing             bool              `yaml:"response_time,omitempty"`
+	HttpType            string            `yaml:"http_api_type,omitempty"`
+	HttpConfig          string            `yaml:"http_api_config,omitempty"`
 	allUserTags         map[string]string
 }
 
