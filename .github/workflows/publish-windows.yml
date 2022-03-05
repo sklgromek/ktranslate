@@ -89,7 +89,7 @@ jobs:
           & "$env:WIX\bin\light.exe" ktranslate.wixobj SnmpProfiles.wixobj -out ktranslate.msi -ext WixUtilExtension  -ext WixUIExtension -nologo
           $signingcert = [Convert]::FromBase64String($env.SIGNING_CERT)
           [IO.File]::WriteAllBytes("signingcert.pfx", $signingcert)
-          SignTool sign /f signingcert.pfx ktranslate.exe
+          Get-ChildItem Env:
       
       - name: Publish MSI
         uses: actions/upload-artifact@v2
