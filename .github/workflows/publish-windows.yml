@@ -91,7 +91,7 @@ jobs:
           & "$env:WIX\bin\light.exe" ktranslate.wixobj SnmpProfiles.wixobj -out ktranslate.msi -ext WixUtilExtension  -ext WixUIExtension -nologo
           $signingcert = [Convert]::FromBase64String($env.SIGNING_CERT)
           [IO.File]::WriteAllBytes("signingcert.pfx", $signingcert)
-          & "C:\Program Files (x86)\Windows Kits\10\App Certification Kit\signtool.exe" sign /f signingcert.pfx ktranslate.msi
+          & "C:\Program Files (x86)\Windows Kits\10\App Certification Kit\signtool.exe" sign /fd SHA256 /f signingcert.pfx ktranslate.msi
       
       - name: Publish MSI
         uses: actions/upload-artifact@v2
