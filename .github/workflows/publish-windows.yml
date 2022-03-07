@@ -85,15 +85,13 @@ jobs:
           
       - name: Build MSI
         run: |
-          #$env:ProductCode = [guid]::NewGuid().ToString()
-          #& "$env:WIX\bin\heat.exe" dir ".\config\profiles" -platform x64 -var var.SnmpProfilesPath -dr ConfigDir -cg SnmpProfiles -ag -sfrag -out SnmpProfiles.wxs -nologo
-          #& "$env:WIX\bin\candle.exe" -dVersion="$(Get-Date -Format 'yy.MM.dd')" -dPath="./" -dSnmpProfilesPath="./config/profiles"  -ext WixUtilExtension -ext WixUIExtension ktranslate.wxs SnmpProfiles.wxs -arch x64 -nologo
-          #& "$env:WIX\bin\light.exe" ktranslate.wixobj SnmpProfiles.wixobj -out ktranslate.msi -ext WixUtilExtension  -ext WixUIExtension -nologo
-          #$signingcert = [Convert]::FromBase64String($env.SIGNING_CERT)
-          #[IO.File]::WriteAllBytes("signingcert.pfx", $signingcert)
-          #Get-ChildItem Env:
-          cd "C:\Program Files (x86)"
-          gci -r -fi SignTool.exe
+          $env:ProductCode = [guid]::NewGuid().ToString()
+          & "$env:WIX\bin\heat.exe" dir ".\config\profiles" -platform x64 -var var.SnmpProfilesPath -dr ConfigDir -cg SnmpProfiles -ag -sfrag -out SnmpProfiles.wxs -nologo
+          & "$env:WIX\bin\candle.exe" -dVersion="$(Get-Date -Format 'yy.MM.dd')" -dPath="./" -dSnmpProfilesPath="./config/profiles"  -ext WixUtilExtension -ext WixUIExtension ktranslate.wxs SnmpProfiles.wxs -arch x64 -nologo
+          & "$env:WIX\bin\light.exe" ktranslate.wixobj SnmpProfiles.wixobj -out ktranslate.msi -ext WixUtilExtension  -ext WixUIExtension -nologo
+          $signingcert = [Convert]::FromBase64String($env.SIGNING_CERT)
+          [IO.File]::WriteAllBytes("signingcert.pfx", $signingcert)
+          & "C:\Program Files (x86)\Windows Kits\10\App Certification Kit\signtool.exe" sign /f signingcert.pfx ktranslate.msi
       
       - name: Publish MSI
         uses: actions/upload-artifact@v2
