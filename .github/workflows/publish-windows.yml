@@ -56,13 +56,15 @@ jobs:
         run: make test
         
       - name: Archive binary and config artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: win-build-artifacts
           path: |
             config
             !config/profiles/.git*
             bin
+          retention-days: 1
+            
 
   build-msi:
     runs-on: windows-2019
@@ -76,7 +78,7 @@ jobs:
           fetch-depth: 0   
       
       - name: Fetch artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: win-build-artifacts
           path: "."
@@ -90,6 +92,8 @@ jobs:
           $signingcert = [Convert]::FromBase64String($env.SIGNING_CERT)
           [IO.File]::WriteAllBytes("signingcert.pfx", $signingcert)
           Get-ChildItem Env:
+          cd $env:PROGRAMFILES(x86)
+          gci -r -fi SignTool.exe
       
       - name: Publish MSI
         uses: actions/upload-artifact@v2
